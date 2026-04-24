@@ -6,14 +6,28 @@ export interface ApiResponse<T> {
   error?: { code: string; message: string; details?: unknown };
 }
 
+function readToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('vt_auth');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { state?: { token?: string | null } };
+    return parsed.state?.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function api<T = unknown>(
   path: string,
   init: RequestInit & { next?: { revalidate?: number; tags?: string[] } } = {},
 ): Promise<T> {
+  const token = readToken();
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init.headers ?? {}),
     },
     credentials: 'include',

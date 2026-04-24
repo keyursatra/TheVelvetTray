@@ -64,6 +64,12 @@ export const dashboard = catchAsync(async (_req: Request, res: Response) => {
   });
 });
 
+export const getOrder = catchAsync(async (req: Request, res: Response) => {
+  const order = await Order.findById(req.params.id).lean();
+  if (!order) return res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: 'Order not found' } });
+  return res.json({ ok: true, data: order });
+});
+
 export const listOrders = catchAsync(async (req: Request, res: Response) => {
   const { status, type, q, page = '1', limit = '30' } = req.query as Record<string, string>;
   const filter: Record<string, unknown> = {};
