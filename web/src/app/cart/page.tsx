@@ -1,10 +1,11 @@
 'use client';
 import Link from 'next/link';
-import { useCart } from '@/lib/cart';
+import { useCart, useHasMounted } from '@/lib/cart';
 import { formatINR } from '@/lib/api';
 
 export default function CartPage() {
   const { lines, update, remove, subtotal } = useCart();
+  const mounted = useHasMounted();
   const total = subtotal();
 
   return (
@@ -12,7 +13,11 @@ export default function CartPage() {
       <div className="eyebrow text-gold-700">Your Tray</div>
       <h1 className="mt-3 font-serif text-display">The basket</h1>
 
-      {lines.length === 0 ? (
+      {!mounted ? (
+        <div className="card-tray p-12 mt-10 text-center text-ink-50">
+          <div className="eyebrow animate-pulse">Composing</div>
+        </div>
+      ) : lines.length === 0 ? (
         <div className="card-tray p-12 mt-10 text-center">
           <p className="font-serif text-2xl">Your tray is empty.</p>
           <p className="text-ink-70 mt-3">Begin with the collection.</p>

@@ -23,9 +23,22 @@ export function createApp(): Express {
       crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );
+  // Support comma-separated origin lists (prod multi-domain) and exact-match check.
+  const allowedOrigins = new Set(
+    [env.WEB_ORIGIN, env.ADMIN_ORIGIN]
+      .flatMap((v) => v.split(','))
+      .map((v) => v.trim())
+      .filter(Boolean),
+  );
+
   app.use(
     cors({
-      origin: [env.WEB_ORIGIN, env.ADMIN_ORIGIN],
+      origin: (origin, cb) => {
+        // Server-to-server / curl have no origin → allow.
+        if (!origin) return cb(null, true);
+        if (allowedOrigins.has(origin)) return cb(null, true);
+        return cb(new Error(`Origin ${origin} not allowed`));
+      },
       credentials: true,
     }),
   );

@@ -42,7 +42,10 @@ export const list = catchAsync(async (req: Request, res: Response) => {
 
   if (occasion) {
     const occ = await Occasion.findOne({ slug: occasion, isActive: true }).select('_id');
-    if (!occ) return res.json({ ok: true, data: [], page: 1, total: 0 });
+    if (!occ) {
+      res.json({ ok: true, data: [], page: 1, total: 0 });
+      return;
+    }
     filter.occasions = occ._id;
   }
 

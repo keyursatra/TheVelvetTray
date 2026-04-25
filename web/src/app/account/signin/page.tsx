@@ -18,10 +18,10 @@ export default function SignInPage() {
     setBusy(true);
     setError(null);
     try {
-      const data = await api<{ user: { id: string; name: string; email: string; role: 'customer' | 'corporate' | 'admin' | 'superadmin' }; accessToken: string }>(
-        '/auth/login',
-        { method: 'POST', body: JSON.stringify({ email, password }) },
-      );
+      const data = await api<{
+        user: { id: string; name: string; email: string; role: 'customer' | 'corporate' | 'admin' | 'superadmin' };
+        accessToken: string;
+      }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
       setAuth(data.user, data.accessToken);
       router.push('/account/orders');
     } catch (err) {

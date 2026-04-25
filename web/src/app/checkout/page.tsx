@@ -2,8 +2,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCart } from '@/lib/cart';
+import { useCart, useHasMounted } from '@/lib/cart';
 import { api, formatINR } from '@/lib/api';
+import { openRazorpayCheckout } from '@/lib/razorpay';
+
+const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? '';
 
 interface AddressInput {
   name: string;
@@ -21,6 +24,7 @@ type Step = 'contact' | 'shipping' | 'gifting' | 'review';
 export default function CheckoutPage() {
   const router = useRouter();
   const { lines, subtotal, clear } = useCart();
+  const mounted = useHasMounted();
   const [step, setStep] = useState<Step>('contact');
   const [contact, setContact] = useState({ email: '', phone: '' });
   const [address, setAddress] = useState<AddressInput>({
@@ -35,6 +39,10 @@ export default function CheckoutPage() {
   const tax = Math.round(total * 0.18);
   const shipping = total >= 2500 ? 0 : 120;
   const grand = total + tax + shipping;
+
+  if (!mounted) {
+    return <div className="container py-40 text-center text-ink-50 eyebrow animate-pulse">Composing</div>;
+  }
 
   if (lines.length === 0) {
     return (
@@ -61,16 +69,43 @@ export default function CheckoutPage() {
           deliveryDate: deliveryDate ? new Date(deliveryDate).toISOString() : undefined,
         })),
       };
-      const data = await api<{ order: { _id: string; number: string; totalINR: number }; payment: { orderId: string; amount: number; currency: string } | null }>(
-        '/orders',
-        { method: 'POST', body: JSON.stringify(payload) },
-      );
-      clear();
-      if (data.payment && typeof window !== 'undefined' && (window as unknown as { Razorpay?: unknown }).Razorpay) {
-        // Razorpay checkout would be opened here when keys are configured.
+      const data = await api<{
+        order: { _id: string; number: string; totalINR: number };
+        payment: { orderId: string; amount: number; currency: string } | null;
+      }>('/orders', { method: 'POST', body: JSON.stringify(payload) });
+
+      // No payment session (Razorpay not configured server-side) — order saved as
+      // pending_payment for manual capture. Take user to tracking with a notice.
+      if (!data.payment || !RAZORPAY_KEY_ID) {
+        clear();
+        router.push(`/track-order?number=${data.order.number}&pending=1`);
+        return;
+      }
+
+      // Open Razorpay checkout. Verification happens on success.
+      try {
+        const result = await openRazorpayCheckout({
+          keyId: RAZORPAY_KEY_ID,
+          amountINR: data.order.totalINR, // server is the source of truth
+          currency: data.payment.currency,
+          razorpayOrderId: data.payment.orderId,
+          orderNumber: data.order.number,
+          prefill: { name: note.from || address.name, email: contact.email, contact: contact.phone },
+        });
+        await api('/orders/verify-payment', {
+          method: 'POST',
+          body: JSON.stringify({
+            orderId: data.order._id,
+            razorpayOrderId: result.orderId,
+            razorpayPaymentId: result.paymentId,
+            razorpaySignature: result.signature,
+          }),
+        });
+        clear();
         router.push(`/track-order?number=${data.order.number}`);
-      } else {
-        router.push(`/track-order?number=${data.order.number}`);
+      } catch (payErr) {
+        setError(payErr instanceof Error ? payErr.message : 'Payment did not complete');
+        // Order remains pending_payment server-side; user can retry.
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to place order');

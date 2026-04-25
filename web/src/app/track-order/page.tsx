@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api, formatINR } from '@/lib/api';
 
@@ -14,8 +14,17 @@ interface TrackedOrder {
 }
 
 export default function TrackOrderPage() {
+  return (
+    <Suspense fallback={<div className="container py-40 text-center text-ink-50 eyebrow animate-pulse">Loading</div>}>
+      <TrackOrderContent />
+    </Suspense>
+  );
+}
+
+function TrackOrderContent() {
   const params = useSearchParams();
   const [number, setNumber] = useState(params.get('number') ?? '');
+  const pending = params.get('pending') === '1';
   const [email, setEmail] = useState('');
   const [order, setOrder] = useState<TrackedOrder | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +48,16 @@ export default function TrackOrderPage() {
     <div className="container py-16">
       <div className="eyebrow text-gold-700">Tracking</div>
       <h1 className="mt-3 font-serif text-display">Follow your tray.</h1>
+
+      {pending && (
+        <div className="mt-8 card-tray p-6 border-l-4 border-gold-700">
+          <div className="eyebrow text-gold-700">Order received</div>
+          <p className="mt-2 text-ink-70 leading-relaxed">
+            Your order is in. Our concierge will be in touch within one working day to confirm
+            payment details and finalise dispatch.
+          </p>
+        </div>
+      )}
 
       <div className="mt-10 grid lg:grid-cols-[1fr_2fr] gap-10">
         <section className="card-tray p-8 h-fit">

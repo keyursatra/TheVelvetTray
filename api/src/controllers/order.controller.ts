@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
+import type { Types } from 'mongoose';
 import { z } from 'zod';
-import { Order, type OrderStatus } from '../models/Order';
+import { Order, type OrderStatus, type OrderLine } from '../models/Order';
 import { Hamper } from '../models/Hamper';
 import { ApiError } from '../utils/ApiError';
 import { catchAsync } from '../utils/catchAsync';
@@ -71,7 +72,28 @@ export const create = catchAsync(async (req: Request, res: Response) => {
       );
     }
 
-    const unit = hamper.priceINR;
+    // Validate customization keys against the hamper's allowed options + apply price deltas.
+    let customizationDelta = 0;
+    const optionByKey = new Map<string, (typeof hamper.customization)[number]>();
+    for (const o of hamper.customization) optionByKey.set(o.key, o);
+
+    for (const c of line.customization ?? []) {
+      const opt = optionByKey.get(c.key);
+      if (!opt) throw ApiError.badRequest(`Unsupported customization "${c.key}" for ${hamper.name}`);
+      if (opt.maxLength && c.value.length > opt.maxLength) {
+        throw ApiError.badRequest(`Customization "${c.key}" exceeds ${opt.maxLength} characters`);
+      }
+      if (opt.priceDeltaINR) customizationDelta += opt.priceDeltaINR;
+    }
+
+    const submittedKeys = new Set((line.customization ?? []).map((c) => c.key));
+    for (const opt of hamper.customization) {
+      if (opt.required && !submittedKeys.has(opt.key)) {
+        throw ApiError.badRequest(`Customization "${opt.key}" is required for ${hamper.name}`);
+      }
+    }
+
+    const unit = hamper.priceINR + customizationDelta;
     subtotal += unit * line.quantity;
     lines.push({
       hamper: hamper._id,
@@ -184,13 +206,10 @@ export const verifyPayment = catchAsync(async (req: Request, res: Response) => {
       String(line.hamper),
       line.quantity,
     );
-    if (!consumed) {
-      line.status = 'in_production'; // ops will resolve
-    } else {
-      line.status = 'paid';
-    }
+    line.status = consumed ? 'paid' : 'in_production'; // ops resolves OOS lines
     if (substitutions?.length) line.substitutions = substitutions;
   }
+  order.markModified('lines'); // ensure subdoc array updates persist
   await order.save();
 
   emitAdmin('order:update', { id: String(order._id), number: order.number, status: order.status });
@@ -251,9 +270,12 @@ export const updateStatus = catchAsync(async (req: Request, res: Response) => {
   if (!order) throw ApiError.notFound('Order');
 
   if (lineId) {
-    const line = order.lines.id(lineId);
+    // order.lines is a Mongoose DocumentArray at runtime; cast for the .id() helper.
+    const lines = order.lines as unknown as Types.DocumentArray<OrderLine>;
+    const line = lines.id(lineId);
     if (!line) throw ApiError.notFound('Order line');
     line.status = status;
+    order.markModified('lines');
     // If all lines delivered -> order delivered; some -> partial
     const statuses = order.lines.map((l) => l.status);
     if (statuses.every((s) => s === 'delivered')) order.status = 'delivered';

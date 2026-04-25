@@ -47,6 +47,16 @@ function setAuthCookies(res: Response, access: string, refresh: string) {
   res.cookie('refresh_token', refresh, { ...common, maxAge: 30 * 24 * 60 * 60 * 1000, path: '/auth' });
 }
 
+function publicUser(user: { _id: unknown; name: string; email: string; role: string; phone?: string }) {
+  return {
+    id: String(user._id),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    phone: user.phone,
+  };
+}
+
 export const register = catchAsync(async (req: Request, res: Response) => {
   const { name, email, password, phone, role = 'customer', company } = req.body;
   const existing = await User.findOne({ email });
@@ -64,13 +74,12 @@ export const register = catchAsync(async (req: Request, res: Response) => {
 
   const payload = { sub: String(user._id), role: user.role, email: user.email };
   const access = signAccessToken(payload);
-  const refresh = signRefreshToken(payload);
-  setAuthCookies(res, access, refresh);
+  const refreshToken = signRefreshToken(payload);
+  setAuthCookies(res, access, refreshToken);
 
   res.status(201).json({
     ok: true,
-    user: { id: user._id, name: user.name, email: user.email, role: user.role },
-    accessToken: access,
+    data: { user: publicUser(user), accessToken: access },
   });
 });
 
@@ -86,13 +95,12 @@ export const login = catchAsync(async (req: Request, res: Response) => {
 
   const payload = { sub: String(user._id), role: user.role, email: user.email };
   const access = signAccessToken(payload);
-  const refresh = signRefreshToken(payload);
-  setAuthCookies(res, access, refresh);
+  const refreshToken = signRefreshToken(payload);
+  setAuthCookies(res, access, refreshToken);
 
   res.json({
     ok: true,
-    user: { id: user._id, name: user.name, email: user.email, role: user.role },
-    accessToken: access,
+    data: { user: publicUser(user), accessToken: access },
   });
 });
 
@@ -103,18 +111,18 @@ export const refresh = catchAsync(async (req: Request, res: Response) => {
   const access = signAccessToken({ sub: payload.sub, role: payload.role, email: payload.email });
   const refreshNew = signRefreshToken({ sub: payload.sub, role: payload.role, email: payload.email });
   setAuthCookies(res, access, refreshNew);
-  res.json({ ok: true, accessToken: access });
+  res.json({ ok: true, data: { accessToken: access } });
 });
 
 export const logout = (_req: Request, res: Response) => {
   res.clearCookie('access_token', { path: '/' });
   res.clearCookie('refresh_token', { path: '/auth' });
-  res.json({ ok: true });
+  res.json({ ok: true, data: { signedOut: true } });
 };
 
 export const me = catchAsync(async (req: Request, res: Response) => {
   if (!req.auth) throw ApiError.unauthorized();
   const user = await User.findById(req.auth.sub);
   if (!user) throw ApiError.notFound('User');
-  res.json({ ok: true, user });
+  res.json({ ok: true, data: publicUser(user) });
 });

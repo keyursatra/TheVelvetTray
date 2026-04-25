@@ -19,7 +19,7 @@ export default function LoginPage() {
         '/auth/login',
         { method: 'POST', body: JSON.stringify({ email, password }) },
       );
-      if (data.user.role !== 'admin' && data.user.role !== 'superadmin') {
+      if (!data?.user || (data.user.role !== 'admin' && data.user.role !== 'superadmin')) {
         throw new Error('This account does not have admin access');
       }
       setToken(data.accessToken);

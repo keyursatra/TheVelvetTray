@@ -10,6 +10,8 @@ export const dashboard = catchAsync(async (_req: Request, res: Response) => {
   const now = new Date();
   const last30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const last7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const startOfDay = new Date(now);
+  startOfDay.setHours(0, 0, 0, 0);
 
   const [
     revenue30,
@@ -22,6 +24,7 @@ export const dashboard = catchAsync(async (_req: Request, res: Response) => {
     recentOrders,
     recentEnquiries,
     customers,
+    totalHampers,
   ] = await Promise.all([
     Order.aggregate([
       { $match: { paymentStatus: 'captured', createdAt: { $gte: last30 } } },
@@ -31,7 +34,7 @@ export const dashboard = catchAsync(async (_req: Request, res: Response) => {
       { $match: { paymentStatus: 'captured', createdAt: { $gte: last7 } } },
       { $group: { _id: null, sum: { $sum: '$totalINR' }, count: { $sum: 1 } } },
     ]),
-    Order.countDocuments({ createdAt: { $gte: new Date(now.setHours(0, 0, 0, 0)) } }),
+    Order.countDocuments({ createdAt: { $gte: startOfDay } }),
     Order.countDocuments({ status: { $in: ['paid', 'in_production', 'packed'] } }),
     CorporateEnquiry.countDocuments({ status: { $in: ['new', 'in_review'] } }),
     Product.find({ $expr: { $lte: ['$stock', '$lowStockThreshold'] }, isActive: true })
@@ -39,9 +42,10 @@ export const dashboard = catchAsync(async (_req: Request, res: Response) => {
       .limit(10)
       .lean(),
     Product.countDocuments({ stock: { $lte: 0 }, isActive: true }),
-    Order.find({}).sort({ createdAt: -1 }).limit(10).select('number status totalINR createdAt type').lean(),
-    CorporateEnquiry.find({}).sort({ createdAt: -1 }).limit(10).select('reference contact status createdAt').lean(),
+    Order.find({}).sort({ createdAt: -1 }).limit(10).select('_id number status totalINR createdAt type').lean(),
+    CorporateEnquiry.find({}).sort({ createdAt: -1 }).limit(10).select('_id reference contact status createdAt').lean(),
     User.countDocuments({ role: { $in: ['customer', 'corporate'] } }),
+    Hamper.countDocuments({ isActive: true }),
   ]);
 
   res.json({
@@ -58,7 +62,7 @@ export const dashboard = catchAsync(async (_req: Request, res: Response) => {
       outOfStock,
       recentOrders,
       recentEnquiries,
-      totalHampers: await Hamper.countDocuments({ isActive: true }),
+      totalHampers,
       customers,
     },
   });

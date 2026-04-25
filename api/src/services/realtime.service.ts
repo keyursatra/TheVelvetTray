@@ -17,11 +17,13 @@ export type RealtimeEvent =
 let io: IOServer | null = null;
 
 export function initRealtime(server: HttpServer): IOServer {
+  const origins = [env.WEB_ORIGIN, env.ADMIN_ORIGIN]
+    .flatMap((v) => v.split(','))
+    .map((v) => v.trim())
+    .filter(Boolean);
+
   io = new IOServer(server, {
-    cors: {
-      origin: [env.WEB_ORIGIN, env.ADMIN_ORIGIN],
-      credentials: true,
-    },
+    cors: { origin: origins, credentials: true },
     path: '/rt',
   });
 

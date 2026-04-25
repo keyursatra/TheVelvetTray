@@ -16,9 +16,11 @@ const nav = [
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const count = useCart((s) => s.count());
 
   useEffect(() => {
+    setMounted(true);
     const onScroll = () => setScrolled(window.scrollY > 12);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -59,10 +61,11 @@ export function Navbar() {
           <Link
             href="/cart"
             className="relative text-xs uppercase tracking-widest text-ink hover:text-crimson"
-            aria-label={`Cart with ${count} items`}
+            aria-label={mounted ? `Cart with ${count} items` : 'Cart'}
+            suppressHydrationWarning
           >
             Cart
-            {count > 0 && (
+            {mounted && count > 0 && (
               <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-crimson text-ivory text-[10px]">
                 {count}
               </span>

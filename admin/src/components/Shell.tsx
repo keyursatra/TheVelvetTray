@@ -28,7 +28,15 @@ export function Shell({ children }: { children: React.ReactNode }) {
     }
     let cancelled = false;
     api<{ name: string; email: string; role: string }>('/auth/me')
-      .then((u) => { if (!cancelled) setUser(u); })
+      .then((u) => {
+        if (cancelled) return;
+        if (u.role !== 'admin' && u.role !== 'superadmin') {
+          setToken(null);
+          router.push('/login');
+          return;
+        }
+        setUser(u);
+      })
       .catch(() => {
         setToken(null);
         router.push('/login');

@@ -21,10 +21,10 @@ export default function RegisterPage() {
     setBusy(true);
     setError(null);
     try {
-      const data = await api<{ user: { id: string; name: string; email: string; role: 'customer' | 'corporate' | 'admin' | 'superadmin' }; accessToken: string }>(
-        '/auth/register',
-        { method: 'POST', body: JSON.stringify(form) },
-      );
+      const data = await api<{
+        user: { id: string; name: string; email: string; role: 'customer' | 'corporate' | 'admin' | 'superadmin' };
+        accessToken: string;
+      }>('/auth/register', { method: 'POST', body: JSON.stringify(form) });
       setAuth(data.user, data.accessToken);
       router.push('/account/orders');
     } catch (err) {

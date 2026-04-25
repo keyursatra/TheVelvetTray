@@ -51,7 +51,7 @@ async function run() {
   const regions = await Region.find({}).select('_id slug name');
   for (const r of regions) regionBySlug.set(r.slug, String(r._id));
 
-  for (const p of productsSeed) {
+  for (const p of productsSeed as readonly { sku: string; name: string; origin?: string; [k: string]: unknown }[]) {
     const slug = toSlug(p.name);
     const regionSlug = guessRegionSlug(p.origin);
     await Product.findOneAndUpdate(

@@ -1,7 +1,19 @@
 'use client';
+import { useEffect, useState } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Hamper } from './types';
+
+/**
+ * Returns `true` only after the component has mounted on the client.
+ * Use this to defer rendering of state that comes from persisted
+ * storage so SSR/CSR markup matches and React doesn't warn.
+ */
+export function useHasMounted(): boolean {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  return mounted;
+}
 
 export interface CartLine {
   hamperId: string;

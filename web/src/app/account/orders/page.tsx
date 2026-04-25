@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api, formatINR } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useHasMounted } from '@/lib/cart';
 
 interface OrderRow {
   _id: string;
@@ -17,16 +18,22 @@ interface OrderRow {
 
 export default function MyOrdersPage() {
   const router = useRouter();
+  const mounted = useHasMounted();
   const user = useAuth((s) => s.user);
   const [orders, setOrders] = useState<OrderRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!mounted) return; // wait for persist to hydrate
     if (!user) { router.push('/account/signin'); return; }
     api<OrderRow[]>('/orders/mine')
       .then(setOrders)
       .catch((err) => setError(err instanceof Error ? err.message : 'Unable to load orders'));
-  }, [user, router]);
+  }, [mounted, user, router]);
+
+  if (!mounted) {
+    return <div className="container py-40 text-center text-ink-50 eyebrow animate-pulse">Loading</div>;
+  }
 
   return (
     <div className="container py-16">

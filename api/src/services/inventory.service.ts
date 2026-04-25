@@ -21,16 +21,21 @@ export async function effectiveHamperStock(hamper: IHamper): Promise<number> {
   for (const item of hamper.items) {
     const p = byId.get(String(item.product));
     if (!p) return 0;
-    if (!item.substitutable) {
-      const possible = Math.floor((p.stock ?? 0) / item.quantity);
-      if (possible < floor) floor = possible;
-    } else {
-      // substitutable -> considered available (ops will swap)
-      const possible = Math.floor(((p.stock ?? 0) + 9999) / item.quantity);
-      if (possible < floor) floor = possible;
+
+    if (item.substitutable) {
+      // Substitutable items don't block availability — ops will swap with
+      // a Product.substitutes entry if the primary item is short. Skip them.
+      continue;
     }
+
+    const possible = Math.floor((p.stock ?? 0) / item.quantity);
+    if (possible < floor) floor = possible;
   }
-  return floor === Number.POSITIVE_INFINITY ? 0 : Math.max(0, floor);
+
+  // If every item was substitutable, treat the hamper as available in
+  // small quantities — show stock of 99 as a soft signal. Ops still verifies.
+  if (floor === Number.POSITIVE_INFINITY) return 99;
+  return Math.max(0, floor);
 }
 
 /**

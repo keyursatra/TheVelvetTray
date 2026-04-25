@@ -15,6 +15,9 @@ coverage
 .vscode
 uploads
 
+# Build cache
+*.tsbuildinfo
+
 # Transfer artifacts — not source
 *.bundle
 *.zip
