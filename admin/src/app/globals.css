@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  h1, h2, h3, h4 { font-family: 'Cormorant Garamond', Georgia, serif; }
+}
+
+@layer components {
+  .btn { @apply inline-flex items-center justify-center px-4 py-2 text-sm border transition-colors; }
+  .btn-primary { @apply btn bg-crimson text-ivory border-crimson hover:bg-crimson-700; }
+  .btn-ghost { @apply btn border-ink/20 hover:border-ink; }
+  .card { @apply bg-white border border-ink/10 rounded-sm; }
+  .input { @apply w-full border border-ink/20 rounded-sm px-3 py-2 bg-white focus:outline-none focus:border-crimson; }
+  .pill { @apply inline-flex items-center px-2 py-0.5 text-xs uppercase tracking-wider rounded-full; }
+  .table th { @apply text-left text-xs uppercase tracking-wider text-ink-50 font-medium px-4 py-3 border-b border-ink/10; }
+  .table td { @apply px-4 py-3 border-b border-ink/10 text-sm; }
+  .table tr:hover td { @apply bg-paper; }
+  .eyebrow { @apply text-[10px] uppercase tracking-widest text-ink-50; }
+}

@@ -1,0 +1,43 @@
+version: '3.9'
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports: ['27017:27017']
+    volumes: [mongo_data:/data/db]
+    environment:
+      MONGO_INITDB_DATABASE: velvettray
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    ports: ['4000:4000']
+    env_file: ./api/.env
+    depends_on: [mongo]
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/velvettray
+      WEB_ORIGIN: http://localhost:3000
+      ADMIN_ORIGIN: http://localhost:3001
+
+  web:
+    build: ./web
+    restart: unless-stopped
+    ports: ['3000:3000']
+    env_file: ./web/.env.local
+    depends_on: [api]
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:4000/v1
+
+  admin:
+    build: ./admin
+    restart: unless-stopped
+    ports: ['3001:3001']
+    env_file: ./admin/.env.local
+    depends_on: [api]
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:4000/v1
+      NEXT_PUBLIC_API_ORIGIN: http://api:4000
+
+volumes:
+  mongo_data:

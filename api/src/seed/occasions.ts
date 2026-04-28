@@ -1,0 +1,16 @@
+export const occasionsSeed = [
+  { name: 'Diwali',              slug: 'diwali',              shortLabel: 'Diwali',              tone: 'festive',     months: [10, 11], order: 1,  tagline: 'Light travels further with meaning.' },
+  { name: 'Raksha Bandhan',      slug: 'raksha-bandhan',      shortLabel: 'Rakhi',               tone: 'ceremonial',  months: [8],      order: 2,  tagline: 'A thread, a tradition, a tray.' },
+  { name: 'Weddings',            slug: 'weddings',            shortLabel: 'Weddings',            tone: 'ceremonial',  order: 3,  tagline: 'Keepsakes for witnesses of a vow.' },
+  { name: 'Holi',                slug: 'holi',                shortLabel: 'Holi',                tone: 'festive',     months: [3],      order: 4 },
+  { name: 'Eid',                 slug: 'eid',                 shortLabel: 'Eid',                 tone: 'ceremonial',  order: 5 },
+  { name: 'Christmas & New Year',slug: 'christmas-new-year',  shortLabel: 'Christmas',           tone: 'festive',     months: [12, 1],  order: 6 },
+  { name: 'Employee Welcome',    slug: 'employee-welcome',    shortLabel: 'Onboarding',          tone: 'corporate',   order: 7,  tagline: 'A first-day gesture that stays.' },
+  { name: 'Employee Appreciation', slug: 'employee-appreciation', shortLabel: 'Appreciation',    tone: 'corporate',   order: 8 },
+  { name: 'Client Gifting',      slug: 'client-gifting',      shortLabel: 'Clients',             tone: 'corporate',   order: 9 },
+  { name: 'International Women\'s Day', slug: 'international-womens-day', shortLabel: 'IWD',      tone: 'personal',    months: [3],      order: 10 },
+  { name: 'Birthdays',           slug: 'birthdays',           shortLabel: 'Birthdays',           tone: 'personal',    order: 11 },
+  { name: 'Anniversaries',       slug: 'anniversaries',       shortLabel: 'Anniversary',         tone: 'personal',    order: 12 },
+  { name: 'Housewarming',        slug: 'housewarming',        shortLabel: 'Housewarming',        tone: 'personal',    order: 13 },
+  { name: 'Thank You',           slug: 'thank-you',           shortLabel: 'Thank You',           tone: 'personal',    order: 14, tagline: 'Gratitude, beautifully bound.' },
+];
